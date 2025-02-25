@@ -25,3 +25,7 @@ Route::get('/me', [LoginAdminsController::class, 'me'])->middleware('auth.jwt');
 
 Route::middleware(['auth.jwt'])->group(function () {
 });
+
+Route::get('/ping', function () {
+    return response()->json(['message' => 'Laravel esta conectado con Angular'], 200);
+});
