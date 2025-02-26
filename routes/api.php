@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProductosController;
 use App\Http\Controllers\LoginAdminsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,8 +25,15 @@ Route::post('/logout', [LoginAdminsController::class, 'logout'])->middleware('au
 Route::get('/me', [LoginAdminsController::class, 'me'])->middleware('auth.jwt');
 
 Route::middleware(['auth.jwt'])->group(function () {
+    Route::prefix('productos')->group(function () {
+        Route::get('/', [ProductosController::class, 'index']);
+        Route::post('/', [ProductosController::class, 'store']);
+        Route::get('/{id}', [ProductosController::class, 'show']);
+        Route::put('/{id}', [ProductosController::class, 'update']);
+        Route::delete('/{id}', [ProductosController::class, 'destroy']);
+    });
 });
 
 Route::get('/ping', function () {
-    return response()->json(['message' => 'Laravel esta conectado con Angular'], 200);
+    return response()->json(['message' => 'Laravel está conectado con Angular'], 200);
 });

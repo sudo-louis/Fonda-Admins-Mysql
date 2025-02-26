@@ -9,74 +9,96 @@ class ProductosController extends Controller
 {
     public function index()
     {
-        $datos['productos'] = Producto::paginate(4);
-        return view('productos.index', $datos);
-    }
-
-    public function create()
-    {
-        return view('productos.create');
-        return view('producto.create', compact('producto'));
+        $productos = Producto::all();
+        return response()->json($productos, 200);
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'nombre_producto' => 'required|string|max:100',
-            'descripcion' => 'required|string|max:255',
-            'cantidad_en_stock' => 'required|numeric',
-            'precio' => 'required|numeric',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:2048',
+            'descripcion' => 'nullable|string|max:255',
+            'cantidad_en_stock' => 'required|integer|min:0',
+            'precio' => 'required|numeric|min:0',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $datosProducto = request()->except('_token');
-        $imagen = $request->file('foto');
-        if ($imagen && $imagen->isValid()) {
-            $rutaCarpeta = 'storage/uploads';
-            $nombreImagen = $imagen->getClientOriginalName();
-            $request->file('foto')->move($rutaCarpeta, $nombreImagen);
-            $datosProducto['foto'] = $nombreImagen;
+        $fotoPath = null;
+
+        if ($request->hasFile('foto')) {
+            $foto = $request->file('foto');
+            $fotoPath = 'uploads/' . time() . '_' . $foto->getClientOriginalName();
+            $foto->move(public_path('storage/uploads'), $fotoPath);
         }
 
-        Producto::insert($datosProducto);
-        return redirect()->route('productos.index')->with('success', 'Producto registrado con éxito.');
+        $producto = Producto::create([
+            'nombre_producto' => $request->nombre_producto,
+            'descripcion' => $request->descripcion,
+            'cantidad_en_stock' => $request->cantidad_en_stock,
+            'precio' => $request->precio,
+            'foto' => $fotoPath
+        ]);
+
+        return response()->json(['message' => 'Producto creado con éxito', 'producto' => $producto], 201);
     }
 
-    public function show(string $id) {}
+    public function show($id)
+    {
+        $producto = Producto::find($id);
 
-    public function edit(string $id)
+        if (!$producto) {
+            return response()->json(['message' => 'Producto no encontrado'], 404);
+        }
+
+        return response()->json($producto, 200);
+    }
+
+    public function update(Request $request, $id)
     {
         $producto = Producto::findOrFail($id);
-        return view('productos.edit', compact('producto'));
-    }
 
-    public function update(Request $request, string $id)
-    {
         $request->validate([
             'nombre_producto' => 'required|string|max:100',
-            'descripcion' => 'required|string|max:255',
-            'cantidad_en_stock' => 'required|numeric',
-            'precio' => 'required|numeric',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp,avif|max:2048',
+            'descripcion' => 'nullable|string|max:255',
+            'cantidad_en_stock' => 'required|integer|min:0',
+            'precio' => 'required|numeric|min:0',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $datosProductos = request()->except(['_token', '_method']);
-        $imagen = $request->file('foto');
-        if ($imagen && $imagen->isValid()) {
-            $rutaCarpeta = 'storage/uploads';
-            $nombreImagen = $imagen->getClientOriginalName();
-            $request->file('foto')->move($rutaCarpeta, $nombreImagen);
-            $datosProductos['foto'] = $nombreImagen;
+        if ($request->hasFile('foto')) {
+            if ($producto->foto && file_exists(public_path('storage/' . $producto->foto))) {
+                unlink(public_path('storage/' . $producto->foto));
+            }
+
+            $foto = $request->file('foto');
+            $fotoPath = 'uploads/' . time() . '_' . $foto->getClientOriginalName();
+            $foto->move(public_path('storage/uploads'), $fotoPath);
+            $producto->foto = $fotoPath;
         }
 
-        Producto::where('ID', '=', $id)->update($datosProductos);
-        $producto = Producto::findOrFail($id);
-        return redirect()->route('productos.index')->with('success', 'Producto actualizado con éxito.');
+        $producto->nombre_producto = $request->nombre_producto;
+        $producto->descripcion = $request->descripcion;
+        $producto->cantidad_en_stock = $request->cantidad_en_stock;
+        $producto->precio = $request->precio;
+        $producto->save();
+
+        return response()->json(['message' => 'Producto actualizado con éxito', 'producto' => $producto], 200);
     }
 
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        Producto::where('ID', '=', $id)->delete();
-        return redirect('productos');
+        $producto = Producto::find($id);
+
+        if (!$producto) {
+            return response()->json(['message' => 'Producto no encontrado'], 404);
+        }
+
+        if ($producto->foto && file_exists(public_path('storage/' . $producto->foto))) {
+            unlink(public_path('storage/' . $producto->foto));
+        }
+
+        $producto->delete();
+
+        return response()->json(['message' => 'Producto eliminado con éxito'], 200);
     }
 }
