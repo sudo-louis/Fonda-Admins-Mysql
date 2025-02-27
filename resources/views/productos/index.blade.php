@@ -43,7 +43,7 @@
                     </th>
                     <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                         <center>
-                            <img src="{{ asset('storage/uploads') . '/' . $producto->foto }}" width="100" 
+                            <img src="{{ asset('storage/uploads') . '/' . $producto->foto }}" width="100"
                                 alt="imagen del producto">
                         </center>
                     </th>
